@@ -2054,6 +2054,10 @@
             }
 
             for (const item of entries) {
+                // Each simulation gets its own dedicated page
+                currentPage = makePage();
+                pageHost.appendChild(currentPage);
+                pages.push(currentPage);
 
                 const interaction = item.type === 'attract' ? 'Attraction' : 'Repulsion';
                 const potential = potentialEnergy(item.q1, item.q2, item.r);
@@ -2062,7 +2066,7 @@
                         <p style="margin:0; font-size:18px; font-weight:700;">Simulation #${item.num} (${item.pair})</p>
                     </div>
                 `);
-                ensureFitsOrNewPage(simHeader);
+                currentPage.appendChild(simHeader);
 
                 // Helper to render LaTeX as SVG using KaTeX (if available)
                 function renderMathSVG(latex) {
@@ -2081,7 +2085,7 @@
                         <span style="font-size:16px;">Given: </span><span style="font-size:16px;">${renderMathSVG(`q_1=${formatSciLatex(item.q1)}\\,\\mathrm{C},\; q_2=${formatSciLatex(item.q2)}\\,\\mathrm{C},\; r=${item.r.toFixed(4)}\\,\\mathrm{m}`)}</span>
                     </div>
                 `);
-                ensureFitsOrNewPage(givenBlock);
+                currentPage.appendChild(givenBlock);
 
                 const formulaBlock = makeBlock(`
                     <div style="margin:0 0 6px; padding:8px 10px; border:1px solid #eee; border-radius:8px;">
@@ -2089,14 +2093,14 @@
                         <div style="font-size:16px;">${renderMathSVG('U = k\\frac{q_1q_2}{r}')}</div>
                     </div>
                 `);
-                ensureFitsOrNewPage(formulaBlock);
+                currentPage.appendChild(formulaBlock);
 
                 const substitutionBlock = makeBlock(`
                     <div style="margin:0 0 6px; padding:8px 10px; border:1px solid #eee; border-radius:8px;">
                         <div style="font-size:16px;">${renderMathSVG(`F = (8.9875\\times10^9)\\frac{|(${formatSciLatex(item.q1)})(${formatSciLatex(item.q2)})|}{(${item.r.toFixed(4)})^2}`)}</div>
                     </div>
                 `);
-                ensureFitsOrNewPage(substitutionBlock);
+                currentPage.appendChild(substitutionBlock);
 
                 const resultBlock = makeBlock(`
                     <div style="margin:0 0 6px; padding:8px 10px; border:1px solid #eee; border-radius:8px;">
@@ -2104,14 +2108,14 @@
                         <div style="font-size:16px;">${renderMathSVG(`U = ${formatSciLatex(potential)}\\,\\mathrm{J}`)}</div>
                     </div>
                 `);
-                ensureFitsOrNewPage(resultBlock);
+                currentPage.appendChild(resultBlock);
 
                 const explanationBlock = makeBlock(`
                     <div style="margin:0 0 10px; padding:8px 10px; border:1px solid #eee; border-radius:8px;">
                         <span style="font-size:16px;">Explanation: ${interaction}. ${interaction === 'Attraction' ? 'Opposite signs pull toward each other, and potential energy is usually negative.' : 'Same signs push away from each other, and potential energy is usually positive.'}</span>
                     </div>
                 `);
-                ensureFitsOrNewPage(explanationBlock);
+                currentPage.appendChild(explanationBlock);
             }
 
             if (i !== selectedReadings.length - 1) {
