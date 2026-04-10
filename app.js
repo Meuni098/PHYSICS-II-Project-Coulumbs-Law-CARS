@@ -2016,6 +2016,10 @@
         for (let i = 0; i < selectedReadings.length; i++) {
             const reading = selectedReadings[i];
             const entries = getReadingEntries(reading.id);
+            // Debug: Log reading ID and entry count
+            if (window && window.console) {
+                console.log('[PDF Export] Reading ID:', reading.id, 'Entries:', entries.length, entries);
+            }
             const label = getReadingLabel(reading.id, savedReadings.findIndex((x) => x.id === reading.id));
             const simulationImgData = buildSimulationSnapshotDataUrl(reading, entries);
             const graphImgData = buildGraphSnapshotDataUrl(entries, reading);
@@ -2050,51 +2054,68 @@
             }
 
             for (const item of entries) {
+                // Start a new page for each simulation entry
+                currentPage = makePage();
+                pageHost.appendChild(currentPage);
+                pages.push(currentPage);
+
                 const interaction = item.type === 'attract' ? 'Attraction' : 'Repulsion';
                 const potential = potentialEnergy(item.q1, item.q2, item.r);
                 const simHeader = makeBlock(`
                     <div style="margin:0 0 6px; padding:8px 10px; border:1px solid #ddd; border-radius:8px;">
-                        <p style="margin:0; font-size:12px; font-weight:700;">Simulation #${item.num} (${item.pair})</p>
+                        <p style="margin:0; font-size:18px; font-weight:700;">Simulation #${item.num} (${item.pair})</p>
                     </div>
                 `);
-                ensureFitsOrNewPage(simHeader);
+                currentPage.appendChild(simHeader);
+
+                // Helper to render LaTeX as SVG using KaTeX (if available)
+                function renderMathSVG(latex) {
+                    if (window.katex) {
+                        try {
+                            return window.katex.renderToString(latex, { output: 'svg', throwOnError: false });
+                        } catch (e) {
+                            return `<span>${latex}</span>`;
+                        }
+                    }
+                    return `<span>${latex}</span>`;
+                }
 
                 const givenBlock = makeBlock(`
                     <div style="margin:0 0 6px; padding:8px 10px; border:1px solid #eee; border-radius:8px;">
-                        <p style="margin:0; font-size:12px;">Given: $q_1=${formatSciLatex(item.q1)}\\,\\mathrm{C},\; q_2=${formatSciLatex(item.q2)}\\,\\mathrm{C},\; r=${item.r.toFixed(4)}\\,\\mathrm{m}$</p>
+                        <span style="font-size:16px;">Given: </span><span style="font-size:16px;">${renderMathSVG(`q_1=${formatSciLatex(item.q1)}\\,\\mathrm{C},\; q_2=${formatSciLatex(item.q2)}\\,\\mathrm{C},\; r=${item.r.toFixed(4)}\\,\\mathrm{m}`)}</span>
                     </div>
                 `);
-                ensureFitsOrNewPage(givenBlock);
+                currentPage.appendChild(givenBlock);
 
                 const formulaBlock = makeBlock(`
                     <div style="margin:0 0 6px; padding:8px 10px; border:1px solid #eee; border-radius:8px;">
-                        <p style="margin:0 0 4px; font-size:12px;">$$F = k\\frac{|q_1q_2|}{r^2}$$</p>
-                        <p style="margin:0; font-size:12px;">$$U = k\\frac{q_1q_2}{r}$$</p>
+                        <div style="font-size:16px;">${renderMathSVG('F = k\\frac{|q_1q_2|}{r^2}')}</div>
+                        <div style="font-size:16px;">${renderMathSVG('U = k\\frac{q_1q_2}{r}')}</div>
                     </div>
                 `);
-                ensureFitsOrNewPage(formulaBlock);
+                currentPage.appendChild(formulaBlock);
 
                 const substitutionBlock = makeBlock(`
                     <div style="margin:0 0 6px; padding:8px 10px; border:1px solid #eee; border-radius:8px;">
-                        <p style="margin:0; font-size:12px;">$$F = (8.9875\\times10^9)\\frac{|(${formatSciLatex(item.q1)})(${formatSciLatex(item.q2)})|}{(${item.r.toFixed(4)})^2}$$</p>
+                        <div style="font-size:16px;">${renderMathSVG(`F = (8.9875\\times10^9)\\frac{|(${formatSciLatex(item.q1)})(${formatSciLatex(item.q2)})|}{(${item.r.toFixed(4)})^2}`)}</div>
                     </div>
                 `);
-                ensureFitsOrNewPage(substitutionBlock);
+                currentPage.appendChild(substitutionBlock);
 
                 const resultBlock = makeBlock(`
                     <div style="margin:0 0 6px; padding:8px 10px; border:1px solid #eee; border-radius:8px;">
-                        <p style="margin:0 0 4px; font-size:12px;">$$F = ${formatSciLatex(item.f)}\\,\\mathrm{N}$$</p>
-                        <p style="margin:0; font-size:12px;">$$U = ${formatSciLatex(potential)}\\,\\mathrm{J}$$</p>
+                        <div style="font-size:16px;">${renderMathSVG(`F = ${formatSciLatex(item.f)}\\,\\mathrm{N}`)}</div>
+                        <div style="font-size:16px;">${renderMathSVG(`U = ${formatSciLatex(potential)}\\,\\mathrm{J}`)}</div>
                     </div>
                 `);
-                ensureFitsOrNewPage(resultBlock);
+                currentPage.appendChild(resultBlock);
 
                 const explanationBlock = makeBlock(`
                     <div style="margin:0 0 10px; padding:8px 10px; border:1px solid #eee; border-radius:8px;">
-                        <p style="margin:0; font-size:12px;">Explanation: ${interaction}. ${interaction === 'Attraction' ? 'Opposite signs pull toward each other, and potential energy is usually negative.' : 'Same signs push away from each other, and potential energy is usually positive.'}</p>
+                        <span style="font-size:16px;">Explanation: ${interaction}. ${interaction === 'Attraction' ? 'Opposite signs pull toward each other, and potential energy is usually negative.' : 'Same signs push away from each other, and potential energy is usually positive.'}</span>
                     </div>
                 `);
-                ensureFitsOrNewPage(explanationBlock);
+                currentPage.appendChild(explanationBlock);
             }
 
             if (i !== selectedReadings.length - 1) {
